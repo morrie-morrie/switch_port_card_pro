@@ -127,6 +127,30 @@ See picture below how to set the number of ports to the desired amount via the p
   <em>configuration of the integration</em>
 </p>
 
+## Manual port naming (descriptions)
+You can manually override the SNMP-discovered port names from the integration options.
+
+In **Devices & Services** -> **Switch Port Integration Pro** -> **Configure**, use the option:
+
+- `port_name_overrides`
+
+Format:
+
+- Comma-separated pairs in the form `port=name`
+- Example: `1=Uplink,2=Office AP,3=NAS`
+
+Behavior:
+
+- If a port override exists, the custom name is used.
+- If no override exists for a port, the original SNMP description is used.
+- Invalid entries are ignored safely.
+
+Tips:
+
+- Spaces are allowed in names (for example `4=Meeting Room Printer`).
+- Port numbers must be positive integers.
+- Leave the field empty to use only SNMP names.
+
 ## Verified oids for zyxel 1935
 Example uses switch name 'switch 192.168.1.1'. The number 890 is the zyxel manufacturer code (oid's  with that number are manufacturer specific)
 

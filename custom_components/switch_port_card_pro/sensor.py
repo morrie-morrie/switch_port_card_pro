@@ -58,6 +58,7 @@ class SwitchPortCoordinator(DataUpdateCoordinator[SwitchPortData]):
         snmp_version: str,
         include_vlans: bool,
         update_seconds: int,
+        port_name_overrides: dict[int, str] | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -74,6 +75,7 @@ class SwitchPortCoordinator(DataUpdateCoordinator[SwitchPortData]):
         self.include_vlans = include_vlans
         self.mp_model = SNMP_VERSION_TO_MP_MODEL.get(snmp_version, 1)
         self.port_mapping = {}
+        self.port_name_overrides = port_name_overrides or {}
         self.update_seconds = update_seconds
         self._last_total_bytes = 0
 
@@ -163,6 +165,11 @@ class SwitchPortCoordinator(DataUpdateCoordinator[SwitchPortData]):
                         "poe_status": poe_status.get(if_index, 0),
                         "port_custom": port_custom.get(if_index, 0),
                     })
+
+                # Manual overrides always take precedence over discovered SNMP names.
+                custom_name = self.port_name_overrides.get(port)
+                if custom_name:
+                    ports_data[p]["name"] = custom_name
 
                 total_rx += rx.get(if_index, 0)
                 total_tx += tx.get(if_index, 0)

@@ -35,6 +35,48 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
+def _parse_port_name_overrides(raw_value) -> dict[int, str]:
+    """Parse port name overrides from options into a map of port -> name.
+
+    Accepted input formats:
+    - "1=Uplink,2=Office AP"
+    - {"1": "Uplink", 2: "Office AP"}
+    """
+    overrides: dict[int, str] = {}
+
+    if isinstance(raw_value, dict):
+        for key, value in raw_value.items():
+            try:
+                port = int(str(key).strip())
+            except (TypeError, ValueError):
+                continue
+
+            label = str(value).strip() if value is not None else ""
+            if port > 0 and label:
+                overrides[port] = label
+        return overrides
+
+    if not isinstance(raw_value, str) or not raw_value.strip():
+        return overrides
+
+    for part in raw_value.split(","):
+        token = part.strip()
+        if not token or "=" not in token:
+            continue
+
+        key, value = token.split("=", 1)
+        try:
+            port = int(key.strip())
+        except ValueError:
+            continue
+
+        label = value.strip()
+        if port > 0 and label:
+            overrides[port] = label
+
+    return overrides
+
+
 async def async_install_frontend_resource(hass: HomeAssistant):
     """Ensure the frontend JS file is copied to the www/community folder."""
     
@@ -276,11 +318,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "uptime": entry.options.get("oid_uptime", DEFAULT_SYSTEM_OIDS.get("uptime", "")),
         "custom": entry.options.get("oid_custom", DEFAULT_SYSTEM_OIDS.get("custom", "")),
     }
+    port_name_overrides = _parse_port_name_overrides(
+        entry.options.get("port_name_overrides", "")
+    )
 
     # Create coordinator
     coordinator = SwitchPortCoordinator(
         hass, host, community, snmp_port, ports, base_oids, system_oids, 
-        snmp_version, include_vlans, update_seconds
+        snmp_version, include_vlans, update_seconds, port_name_overrides
     )
     coordinator.device_name = entry.title
     coordinator.port_mapping = detected or {}  # Empty dict if detection failed

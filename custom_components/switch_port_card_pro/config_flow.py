@@ -83,6 +83,7 @@ class SwitchPortCardProConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     #                    CONF_PORTS: DEFAULT_PORTS, # removed for auto port detection
     #                    CONF_INCLUDE_VLANS: True,
                         "snmp_version": "v2c",
+                        "port_name_overrides": "",
                         "oid_rx": DEFAULT_BASE_OIDS["rx"],
                         "oid_tx": DEFAULT_BASE_OIDS["tx"],
                         "oid_status": DEFAULT_BASE_OIDS["status"],
@@ -176,6 +177,10 @@ class SwitchPortCardProOptionsFlow(config_entries.OptionsFlow):
                     CONF_PORTS,
                     default=current_ports,
                 ): cv.multi_select(ports_dict),
+                vol.Optional(
+                    "port_name_overrides",
+                    default=current.get("port_name_overrides", ""),
+                ): cv.string,
                 
  #               vol.Optional(
  #                   CONF_INCLUDE_VLANS,
