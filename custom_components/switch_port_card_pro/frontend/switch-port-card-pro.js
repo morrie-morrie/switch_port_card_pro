@@ -23,6 +23,7 @@ const DEFAULT_CONFIG = {
   truncate_text: true,
   theme_safe_colors: true,  // not used for now
   card_background_color: "rgba(var(--rgb-primary-background-color, 40, 40, 40), 0.6)",
+  port_names: {},  // Custom port name overrides: { "1": "Server", "2": "NAS", ... }
   system_boxes: {
     cpu: true,
     memory: true,
@@ -809,7 +810,8 @@ class SwitchPortCardPro extends HTMLElement {
     const renderPortRow = (portList, container) => {
       portList.forEach(({ i, ent, isOn, traffic }) => {
         const speedMbps = Math.round((ent.attributes?.speed_bps || 0) / 1e6) || 0;
-        const name = ent.attributes?.port_name?.trim() || `Port ${i}`;
+        const snmpName = ent.attributes?.port_name?.trim() || `Port ${i}`;
+        const name = (this._config.port_names?.[String(i)] || "").trim() || snmpName;
         const vlan = ent.attributes?.vlan_id;
         const poeEnabled = ent.attributes?.poe_enabled === true;
         const ifDescr = ent.attributes?.interface || "";
@@ -995,6 +997,10 @@ class SwitchPortCardProEditor extends HTMLElement {
       system_boxes: {
         ...DEFAULT_CONFIG.system_boxes,
         ...(config?.system_boxes || {})
+      },
+      port_names: {
+        ...DEFAULT_CONFIG.port_names,
+        ...(config?.port_names || {})
       }
     };
   }
@@ -1224,6 +1230,25 @@ class SwitchPortCardProEditor extends HTMLElement {
           <ha-checkbox data-key="hide_unused_port" ${this._config.hide_unused_port ? 'checked' : ''}></ha-checkbox>
           <span class="checkbox-label">Hide Unused Ports</span>
           <span class="field"><label>inactive for (>hours)</span><input type="text" data-key="hide_unused_port_hours" value="${this._config.hide_unused_port_hours || 0}">
+        </div>
+
+        <!-- Port Name Overrides -->
+        <div class="row" style="margin-top:16px">
+          <label style="font-weight:600">Port Name Overrides</label>
+        </div>
+        <div style="font-size:0.82em;color:var(--secondary-text-color);margin-bottom:8px">
+          Enter custom display names for individual ports. Leave blank to use the name from the switch (via SNMP).
+        </div>
+        <div class="row-group" id="port-names-grid">
+          ${Array.from({ length: this._config.total_ports || 8 }, (_, idx) => {
+            const portNum = idx + 1;
+            const currentName = this._config.port_names?.[String(portNum)] || '';
+            const safeVal = currentName.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `<div class="field">
+              <label>Port ${portNum}</label>
+              <input type="text" data-key="port_names.${portNum}" placeholder="Port ${portNum}" value="${safeVal}">
+            </div>`;
+          }).join('')}
         </div>
       </div>
     `;
